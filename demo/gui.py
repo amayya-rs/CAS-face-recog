@@ -2,9 +2,13 @@ from tkinter import *
 from tkinter import messagebox
 import mysql.connector
 import threading
-import sys
 import trace
 import threading
+import numpy as np
+import cv2 
+import sys
+import tkinter
+from PIL import Image,ImageTk
 import time
 
 mydb = mysql.connector.connect(
@@ -150,6 +154,7 @@ def loginpage():
     root2.mainloop()
 
 def main():
+    global root
     
 #----------MAIN PAGE---------------------
     #Canvas and page settings
@@ -168,7 +173,7 @@ def main():
     fingerprint = Button(root, text="Fingerprint", padx=30, pady=30)
     fingerprint.place(relx=0.1, rely=0.5)
 
-    face_id = Button(root, text="Face Recognition and OTP", padx=20, pady=20)
+    face_id = Button(root, text="Face Recognition and OTP", padx=20, pady=20, command=face)
     face_id.place(relx=0.4, rely=0.5)
 
     qr_code = Button(root, text="QR Code", padx=30, pady=30)
@@ -177,7 +182,57 @@ def main():
     root.mainloop()
 
 
+def facecam():
+    root3.destroy()
+    root.destroy()
+
+#this is a face detection pg, it will detect ur face and capture a pic of ur face 
+
+    cap = cv2.VideoCapture(0)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    root4 = Tk()
+    camera1 = Label(root4)
+    camera1.pack()
+
+    countdown = time.time() +5
+
+    while True:
+        ret, frame = cap.read() ##
+        
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) ##
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        for (x, y, w, h) in faces:
+            
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (500, 0, 0), 5)
+            roi_grey = gray[y: y+w, x:x+w] 
+            roi_color = frame[y:y+h, x:x+h]
+            eyes = eye_cascade.detectMultiScale(roi_grey, 1.3, 5)
+            for (ex, ey, ew, eh) in eyes:
+                cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey +eh), (0, 300, 0), 5)
+            #cv2.imwrite("image2.png", roi_grey) #string variable inside is the file classide of ur capture face
+
+            #cv2.imshow('frame', frame)
+            img = ImageTk.PhotoImage(Image.fromarray(frame))
+            camera1.configure(image = img)
+            camera1.update()
+
+        if time.time() >= countdown:
+            print("here")
+            cv2.imwrite("image2.png", roi_grey) #string variable inside is the file classide of ur capture face
+            root4.destroy()
+            break
+        root4.update()
+
+
+    root4.mainloop()
+
+    cap.release()
+    cv2.destroyAllWindows()  
+
+
 def face():
+    global root3
     #canvas and page setting
     root3 = Tk()
     canvas3 = Canvas(root3, height=700, width=800)
@@ -186,7 +241,7 @@ def face():
 #----------FACE RECOGNITION PAGE----------
 
 #face cam activation screen
-    button = Button(root3, text="Click to activate camera", padx=50, pady=50)
+    button = Button(root3, text="Click to activate camera", padx=50, pady=50, command=facecam)
     button.place(relx=0.5, rely=0.5, anchor=CENTER)
 
     root3.mainloop()
@@ -194,10 +249,7 @@ def face():
 
 #threading
 lock = threading.Lock()
-    #first.start() 
-    #second.start() 
-    #first.join()
-    #second.join()
+
 
 class thread_with_trace(threading.Thread):
   def __init__(self, *args, **keywords):
