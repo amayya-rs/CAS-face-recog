@@ -3,9 +3,6 @@ from tkinter import messagebox
 import mysql.connector
 import threading
 import sys
-import trace
-import threading
-import time
 
 mydb = mysql.connector.connect(
   host="localhost",
@@ -21,9 +18,11 @@ teacher = ''
 temail = ''
 Class = ''
 
+exit1 = ''
 
 def inputcheck():
 
+    global exit1
     global loginbutton
     global root2
     global classidE
@@ -31,18 +30,21 @@ def inputcheck():
     while True:
         lock.acquire()
 
+        if exit1 == True:
+            root2.destroy()
             
-        classidd = classidE.get()
+        if exit1 != True:
+            classidd = classidE.get()
 
-        passwordd = passwordE.get()
-    
+            passwordd = passwordE.get()
+        
 
-        if classidd == "" or passwordd == "":
-            loginbutton.config(state="disabled")
-            loginbutton.place(relx=0.5, rely=0.6, anchor=CENTER)
-        if classidd !="" and passwordd !="":
-            loginbutton.config(state="normal")
-            loginbutton.place(relx=0.5, rely=0.6, anchor=CENTER)
+            if classidd == "" or passwordd == "":
+                loginbutton.config(state="disabled")
+                loginbutton.place(relx=0.5, rely=0.6, anchor=CENTER)
+            if classidd !="" and passwordd !="":
+                loginbutton.config(state="normal")
+                loginbutton.place(relx=0.5, rely=0.6, anchor=CENTER)
         lock.release()
 
         
@@ -52,6 +54,7 @@ def inputcheck():
 
 #taking data from database
 def login():
+    global exit1
     global Class
     global teacher
     global temail
@@ -104,14 +107,10 @@ def login():
         messagebox.showerror("Error", "Incorrect login id or password!")
 
     if alert == False:
-        root2.destroy()
-        t2.kill()
+        exit1 = True
         main()
 
     
-def killthread():
-    t1.kill()
-    sys.exit()
 
 def loginpage():
     lock.acquire()
@@ -154,25 +153,20 @@ def main():
 #----------MAIN PAGE---------------------
     #Canvas and page settings
     root = Tk()
-    root.protocol("WM_DELETE_WINDOW", killthread)
     canvas = Canvas(root, height=700, width=800)
     canvas.pack()
     #
 
-    classlabel = Label(root, text = f"Hello {Class}", font=('arial', 20), fg='red')
-    classlabel.place(relx=0.5, rely=0.2, anchor= CENTER)
-
-    instructlabel = Label(root, text="Please select method of attendance.", font=("arial", 15))
-    instructlabel.place(relx=0.5, rely=0.3, anchor= CENTER)
+    classlabel = Label(root, text = f"Hello {Class}")
 
     fingerprint = Button(root, text="Fingerprint", padx=30, pady=30)
-    fingerprint.place(relx=0.1, rely=0.5)
+    fingerprint.place(relx=0.1, rely=0.4)
 
     face_id = Button(root, text="Face Recognition and OTP", padx=20, pady=20)
-    face_id.place(relx=0.4, rely=0.5)
+    face_id.place(relx=0.4, rely=0.4)
 
     qr_code = Button(root, text="QR Code", padx=30, pady=30)
-    qr_code.place(relx=0.8, rely=0.5)
+    qr_code.place(relx=0.8, rely=0.4)
 
     root.mainloop()
 
@@ -194,48 +188,16 @@ def face():
 
 #threading
 lock = threading.Lock()
-    #first.start() 
-    #second.start() 
-    #first.join()
-    #second.join()
+if __name__ == "__main__" :
+    first = threading.Thread ( target = loginpage ) 
+    second = threading.Thread ( target = inputcheck ) 
+    first.start() 
+    second.start() 
+    first.join()
+    second.join()
 
-class thread_with_trace(threading.Thread):
-  def __init__(self, *args, **keywords):
-    threading.Thread.__init__(self, *args, **keywords)
-    self.killed = False
- 
-  def start(self):
-    self.__run_backup = self.run
-    self.run = self.__run     
-    threading.Thread.start(self)
- 
-  def __run(self):
-    sys.settrace(self.globaltrace)
-    self.__run_backup()
-    self.run = self.__run_backup
- 
-  def globaltrace(self, frame, event, arg):
-    if event == 'call':
-      return self.localtrace
-    else:
-      return None
- 
-  def localtrace(self, frame, event, arg):
-    if self.killed:
-      if event == 'line':
-        raise SystemExit()
-    return self.localtrace
- 
-  def kill(self):
-    self.killed = True
- 
-t1 = thread_with_trace(target = loginpage)
-t2 = thread_with_trace(target = inputcheck)
 
-t1.start()
-t2.start()
-t1.join()
-t2.join()
+
 
 
 #loginpage()

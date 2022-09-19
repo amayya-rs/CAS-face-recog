@@ -21,7 +21,7 @@ while True:
         eyes = eye_cascade.detectMultiScale(roi_grey, 1.3, 5)
         for (ex, ey, ew, eh) in eyes:
             cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey +eh), (0, 300, 0), 5)
-        cv2.imwrite("image2.png", roi_grey) #string variable inside is the file name of ur capture face
+        cv2.imwrite("image2.png", roi_grey) #string variable inside is the file classide of ur capture face
 
         cv2.imshow('frame', frame)
 
