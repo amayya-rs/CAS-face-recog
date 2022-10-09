@@ -3,7 +3,7 @@ import face_recognition
 
 #this is a face recognition pg, it will compare two pics and tell whether the face in the 2 pics are similar
 
-img = cv2.imread("image.png") #image 1 to be compare, change the string varibale to ur pic file classide
+img = cv2.imread("C:\\Users\\molse\\OneDrive\\Dokumen\\GitHub\\CAS-face-recog\\image2.png") #image 1 to be compare, change the string varibale to ur pic file classide
 rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 img_encoding = face_recognition.face_encodings(rgb_img)[0]
 
