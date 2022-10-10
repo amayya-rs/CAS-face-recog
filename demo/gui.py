@@ -1,3 +1,4 @@
+from datetime import datetime
 from tkinter import *
 from tkinter import messagebox
 import mysql.connector
@@ -7,9 +8,16 @@ import threading
 import numpy as np
 import cv2 
 import sys
-import tkinter
 from PIL import Image,ImageTk
 import time
+import os
+import face_recognition
+import random
+import string
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 
 mydb = mysql.connector.connect(
   host="localhost",
@@ -24,7 +32,8 @@ passwordE = ''
 teacher = ''
 temail = ''
 Class = ''
-
+todaydate = datetime.now().strftime('%d_%B_%Y') 
+ 
 
 def inputcheck():
 
@@ -50,8 +59,11 @@ def inputcheck():
         lock.release()
 
         
-
-
+def createdatabaseattendance():
+    try:
+        sql.execute(f"create table {todaydate}_{Class} (name varchar(30), time varchar(30), late boolean);")
+    except:
+        pass
 
 
 #taking data from database
@@ -110,6 +122,7 @@ def login():
     if alert == False:
         root2.destroy()
         t2.kill()
+        createdatabaseattendance()
         main()
 
     
@@ -182,10 +195,183 @@ def main():
     root.mainloop()
 
 
+
+def infoo():
+    messagebox.showinfo("Information", "Camera will close 5 seconds after it opens! Look onto the camera once its opened!")
+
+def resetvalue():
+    global name
+    messagebox.showinfo("Attendance Updated", "your attendance has been updated! Thank you for your attendance")
+    name = ''
+    main()
+
+def updatedatabase():
+    currtime = datetime.now().strftime("%H:%M:%S")
+    currtime2 = datetime.now()
+    latetime = currtime2.replace(hour = 7, minute = 30, second = 0)
+    late = False
+    if currtime2 > latetime:
+        late = True
+    sql.execute(f"insert into {todaydate}_{Class} Values ('{name}', '{currtime}', {late});")
+    late = False
+    sendconfimation()
+    
+def sendconfimation():
+    sql.execute(f"select email from {Class} where fullname = '{name}';")
+    result = sql.fetchall()
+    revemail = ''
+    for i in result:
+        revemail = i[0]
+
+    email = "pythonbot123@outlook.com" #sender email
+    password = "TanMichaelOlsen2006" #sender email password
+    receiver = revemail #receiver email 
+    server = smtplib.SMTP('smtp.office365.com', 587)
+    server.ehlo()
+    server.starttls()
+    server.login(email, password)
+
+    
+
+    msg = MIMEMultipart()
+    msg['Subject'] = "Attendance Confimation"
+    msg['To'] = receiver
+    msg['From'] = email
+    body = f"Hello {name}! Your attendance has been succesfully taken! if your teacher marks you absent, you can show this email as a prove that you are present. \n Attendance Date {datetime.now().strftime('%d %B %Y %H:%M:%S')} \n please contact the developers if there are errors on the program."
+    msg.attach(MIMEText(body))
+
+    tobesend = msg.as_string()
+    server.sendmail(email, receiver, tobesend)
+    server.quit()
+    resetvalue()
+
+
+def authentication():
+    global root5
+    global message2
+    code2 = ''
+    global count
+    count = 5
+
+    def sendcode(text):
+        print(Class)
+        sql.execute(f"select email from {Class} where fullname = '{name}';")
+        result = sql.fetchall()
+        revemail = ''
+        for i in result:
+            revemail = i[0]
+
+        email = "pythonbot123@outlook.com" #sender email
+        password = "TanMichaelOlsen2006" #sender email password
+        receiver = revemail #receiver email 
+        server = smtplib.SMTP('smtp.office365.com', 587)
+        server.ehlo()
+        server.starttls()
+        server.login(email, password)
+
+        
+
+        msg = MIMEMultipart()
+        msg['Subject'] = "Attendance Code"
+        msg['To'] = receiver
+        msg['From'] = email
+        body = f"Hello {name}! Here is your attendence code. {text}"
+        msg.attach(MIMEText(body))
+
+        tobesend = msg.as_string()
+        server.sendmail(email, receiver, tobesend)
+        server.quit()
+
+
+    def valuecompare():
+        global code2
+        global count 
+        global message2
+        code2 = str(entrybox.get())
+        messageRL = Label(root5, text="wrong verification code! please try again", fg='red')
+
+        if code2 != code:
+            count = count -1
+            messageRL.grid(row=5, column=0, columnspan=2)
+            message2.config(text=f"Verification Attemp(s): {count}")
+        if code == code2:
+            root5.destroy()
+            updatedatabase()
+
+            #continue here
+        if count == 0:
+            count = 5
+            message2.config(text= f"Verification Attemp(s): {count}")
+            messageRL.config(text = "                                                                      ")
+            messagebox.showwarning("WARNING", "You have used all your verification attemp! A new code will be sent to you, please use this new code to verify.")
+            generate()
+
+            
+            
+    def generate():
+        global code
+        a = string.ascii_letters
+        b = string.digits
+        letters = []
+        for i in a:
+            letters.append(i)
+        for i in b:
+            letters.append(i)
+
+        code = random.choices(letters, k = 6)
+        code = ''.join(code)
+        sendcode(code)
+
+    generate()
+    #widgets
+    root5 = Tk()
+    authL = Label(root5, text = "AUTHENTHICATION", font=('arial', 25))
+    message1 = Label(root5, text = "Please enter your code sent to your email:")
+    message2 = Label(root5, text = f"Code Attemp(s): {count}")
+    entrybox = Entry(root5, width = 40, borderwidth= 5)
+    submitB = Button(root5, text = "Submit", width = 15, height= 5,command= valuecompare)
+
+    authL.grid(row = 0, column = 0)
+    message1.grid(row =1, column= 0)    
+    message2.grid(row =2, column=0)
+    entrybox.grid(row = 3 , columnspan = 2 )
+    submitB.grid(row = 4, column = 0, columnspan= 2)
+
+    
+def facerecogg():
+    global name
+    # folder path
+    dir_path = r'C:\\programming\\python\\CAS\\me'
+
+    # list file and directories
+    res = os.listdir(dir_path)
+    name = ""
+    for i in res:
+        img = cv2.imread("C:\\Users\\molse\\OneDrive\\Dokumen\\GitHub\\CAS-face-recog\\image2.png") #image 1 to be compare, change the string varibale to ur pic file classide
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_encoding = face_recognition.face_encodings(rgb_img)[0]
+
+
+        img2 = cv2.imread(f"C:/programming/python/CAS/me/{i}")
+        print("here1")
+        rgb_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB) #image 2 to be compare, change string variable to ur 2nd pic file classide
+        img_encoding2 = face_recognition.face_encodings(rgb_img2)[0]
+        print("here2")
+
+        result = face_recognition.compare_faces([img_encoding], img_encoding2)
+        print(type(result[0]))
+        if result[0] == True:
+            print("Succesful")
+            name = i.split(".png")
+            name = name[0]
+            break
+    authentication()
+        
+
 def facecam():
     root3.destroy()
     root.destroy()
-
+    infoo()
 #this is a face detection pg, it will detect ur face and capture a pic of ur face 
 
     cap = cv2.VideoCapture(0)
@@ -194,6 +380,8 @@ def facecam():
     root4 = Tk()
     camera1 = Label(root4)
     camera1.pack()
+    
+
 
     countdown = time.time() +5
 
@@ -218,9 +406,10 @@ def facecam():
             camera1.update()
 
         if time.time() >= countdown:
-            print("here")
+            #print("here")
             cv2.imwrite("image2.png", roi_grey) #string variable inside is the file classide of ur capture face
             root4.destroy()
+            t2.kill()
             break
         root4.update()
 
@@ -228,7 +417,8 @@ def facecam():
     root4.mainloop()
 
     cap.release()
-    cv2.destroyAllWindows()  
+    cv2.destroyAllWindows()
+    facerecogg()  
 
 
 def face():
