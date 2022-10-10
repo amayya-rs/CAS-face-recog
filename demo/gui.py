@@ -224,7 +224,7 @@ def sendconfimation():
         revemail = i[0]
 
     email = "pythonbot123@outlook.com" #sender email
-    password = "TanMichaelOlsen2006" #sender email password
+    password = "" #sender email password
     receiver = revemail #receiver email 
     server = smtplib.SMTP('smtp.office365.com', 587)
     server.ehlo()
@@ -262,7 +262,7 @@ def authentication():
             revemail = i[0]
 
         email = "pythonbot123@outlook.com" #sender email
-        password = "TanMichaelOlsen2006" #sender email password
+        password = "" #sender email password
         receiver = revemail #receiver email 
         server = smtplib.SMTP('smtp.office365.com', 587)
         server.ehlo()
